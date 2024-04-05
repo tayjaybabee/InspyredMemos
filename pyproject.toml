@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "inspyredmemos"
+version = "0.1.0"
+description = ""
+authors = ["Taylor B. <tayjaybabee@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pysimplegui = "^5.0.3"
+bcrypt = "^4.1.2"
+sqlalchemy = "^2.0.28"
+cryptography = "^42.0.5"
+platformdirs = "^4.2.0"
+rich = "^13.7.1"
+keyring = "^24.3.1"
+itsdangerous = "^2.1.2"
+inspy-logger = "3.0.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
