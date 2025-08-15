@@ -18,6 +18,7 @@ Description:
 from inspyred_memo_server.config.dirs.defaults import DEFAULT_DIRS
 from pathlib import Path
 import json
+from typing import Optional
 from inspyred_memo_server.utils.decorators import property_alias, validate_type
 
 
@@ -137,15 +138,14 @@ class AppDirs:
         else:
             self._update_cache()
 
-    def _load_dir_from_cache(self, dir_type):
-        """
-        Loads a directory path from the cache file.
+    def _load_dir_from_cache(self, dir_type: str) -> Optional[str]:
+        """Return a cached directory path as a string, if available.
 
         Args:
-            dir_type (str): The type of directory to load ('data', 'config', 'log').
+            dir_type: The type of directory to load ("data", "config", or "log").
 
         Returns:
-            str | None: The loaded directory path as a string, or None if not found.
+            Optional[str]: The cached directory path, or ``None`` if not set.
         """
         cache_file_path = DEFAULT_DIRS.cache / 'app_dirs.cache'
         if cache_file_path.exists():
@@ -159,8 +159,8 @@ class AppDirs:
 
         return None
 
-    def _normalize_cached(self, dir_type):
-        """Return a Path or None from a cached directory entry."""
+    def _normalize_cached(self, dir_type: str) -> Optional[Path]:
+        """Return a ``Path`` for a cached directory entry, if valid."""
         raw = self._load_dir_from_cache(dir_type)
         if raw is None:
             return None
@@ -177,8 +177,8 @@ class AppDirs:
         elif not isinstance(new_dir, Path):
             raise TypeError(f"{name} must be str/Path, got {type(new_dir)}")
         final = new_dir.expanduser().resolve()
-        super().__setattr__(f"_{self.__class__.__name__}__{name}_dir", final)
-        if getattr(self, f"_{self.__class__.__name__}__initialized", False):
+        object.__setattr__(self, f"_AppDirs__{name}_dir", final)
+        if self.__initialized:
             self._update_cache_if_needed()
 
 
