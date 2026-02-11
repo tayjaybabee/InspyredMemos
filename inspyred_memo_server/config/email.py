@@ -171,6 +171,12 @@ class EMailConfig:
 
 
     def create_config(self):
+        """
+        Create a new configuration file with default or provided values.
+        
+        NOTE: This stores SMTP credentials in a configuration file.
+        For production use, consider using environment variables or a secure credential store.
+        """
         if not self.config_file.parent.exists():
             self.config_file.parent.mkdir(parents=True)
 

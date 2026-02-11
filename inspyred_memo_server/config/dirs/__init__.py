@@ -166,7 +166,8 @@ class AppDirs:
                 with open(cache_file_path, 'r') as cache_file:
                     cache = json.load(cache_file)
                     dir_path = cache.get(dir_type)
-                    # Explicitly check for None and invalid values
+                    # Explicitly check for None and invalid values to handle legacy cached data
+                    # that may have been stored as string 'None' instead of null/None
                     if dir_path is not None and str(dir_path).lower() != 'none':
                         return Path(dir_path)
             except (IOError, json.JSONDecodeError) as e:

@@ -35,7 +35,8 @@ class UserVerification:
             mail_port,
             mail_user,
             mail_password,
-            verification_url_base
+            verification_url_base,
+            secret_key=None
     ):
         """
         Initialize the UserVerification system.
@@ -46,13 +47,33 @@ class UserVerification:
             mail_user (str): SMTP username for authentication.
             mail_password (str): SMTP password for authentication.
             verification_url_base (str): Base URL for verification links.
+            secret_key (str, optional): Secret key for token generation. 
+                If not provided, will attempt to read from environment variable 
+                'INSPYRED_MEMOS_SECRET_KEY'. Defaults to a warning value if neither is set.
         """
+        import os
+        
         self.mail_server = mail_server
         self.mail_port = mail_port
         self.mail_user = mail_user
         self.mail_password = mail_password
         self.verification_url_base = verification_url_base
-        self.serializer = URLSafeTimedSerializer('secret-key-change-in-production')
+        
+        # Use provided secret_key, or fallback to environment variable
+        if secret_key is None:
+            secret_key = os.environ.get('INSPYRED_MEMOS_SECRET_KEY')
+            if secret_key is None:
+                import warnings
+                warnings.warn(
+                    "No secret key provided for email verification. "
+                    "Set INSPYRED_MEMOS_SECRET_KEY environment variable or pass secret_key parameter. "
+                    "Using insecure default - DO NOT USE IN PRODUCTION!",
+                    SecurityWarning,
+                    stacklevel=2
+                )
+                secret_key = 'insecure-default-key-change-immediately'
+        
+        self.serializer = URLSafeTimedSerializer(secret_key)
     
     def generate_verification_token(self, email):
         """
@@ -77,6 +98,8 @@ class UserVerification:
         Returns:
             str or None: The email address if valid, None if invalid or expired.
         """
+        from itsdangerous import SignatureExpired, BadSignature, BadData
+        
         try:
             email = self.serializer.loads(
                 token,
@@ -84,7 +107,8 @@ class UserVerification:
                 max_age=max_age
             )
             return email
-        except Exception:
+        except (SignatureExpired, BadSignature, BadData) as e:
+            # Token is invalid, expired, or malformed
             return None
     
     def send_verification_email(self, to_email, token):
@@ -98,6 +122,8 @@ class UserVerification:
         Returns:
             bool: True if email was sent successfully, False otherwise.
         """
+        import logging
+        
         verification_url = f"{self.verification_url_base}?token={token}"
         
         msg = MIMEText(
@@ -115,5 +141,5 @@ class UserVerification:
                 server.send_message(msg)
             return True
         except Exception as e:
-            print(f"Failed to send verification email: {e}")
+            logging.error(f"Failed to send verification email to {to_email}: {e}")
             return False
