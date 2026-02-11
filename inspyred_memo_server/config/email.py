@@ -46,26 +46,25 @@ class EMailConfig:
             auto_create=False,
             auto_load=False,
             no_write=False,
-            server=DEFAULT_CONFIG['smtp_server'],
-            port=DEFAULT_CONFIG['smtp_port'],
-            user=DEFAULT_CONFIG['smtp_user'],
-            password=DEFAULT_CONFIG['smtp_password']
+            server=DEFAULT_CONFIG['DEFAULT']['smtp_server'],
+            port=DEFAULT_CONFIG['DEFAULT']['smtp_port'],
+            user=DEFAULT_CONFIG['DEFAULT']['smtp_user'],
+            password=DEFAULT_CONFIG['DEFAULT']['smtp_password']
     ):
         self.__auto_load = None
         self.__auto_create = None
         self.__config_file = None
         self.__config = None
         self.__no_write = None
+        self.__server = server
+        self.__port = port
+        self.__user = user
+        self.__password = password
 
+        self.no_write = no_write
         self.config_file = config_file
-
-
-
         self.auto_create = auto_create
-
         self.auto_load = auto_load
-
-        self.config_file = config_file
 
     def _ensure_user_section(self):
         if not self.config and self.auto_load:
@@ -172,15 +171,22 @@ class EMailConfig:
 
 
     def create_config(self):
+        """
+        Create a new configuration file with default or provided values.
+        
+        NOTE: This stores SMTP credentials in a configuration file.
+        For production use, consider using environment variables or a secure credential store.
+        """
         if not self.config_file.parent.exists():
             self.config_file.parent.mkdir(parents=True)
 
-        self.config.read_dict(DEFAULT_CONFIG)
+        self.__config = ConfigParser()
+        self.__config.read_dict(DEFAULT_CONFIG)
 
-        self.config['DEFAULT']['smtp_server'] = self.__server
-        self.config['DEFAULT']['smtp_port'] = self.__port
-        self.config['DEFAULT']['smtp_user'] = self.__user
-        self.config['DEFAULT']['smtp_password'] = self.__password
+        self.__config['DEFAULT']['smtp_server'] = self.__server
+        self.__config['DEFAULT']['smtp_port'] = self.__port
+        self.__config['DEFAULT']['smtp_user'] = self.__user
+        self.__config['DEFAULT']['smtp_password'] = self.__password
 
         self.save_config()
 
@@ -192,6 +198,5 @@ class EMailConfig:
 
     def save_config(self):
         if not self.no_write:
-
-        with self.config_file.open('w') as f:
-            self.config.write(f)
+            with self.config_file.open('w') as f:
+                self.config.write(f)
