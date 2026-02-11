@@ -92,4 +92,13 @@ class User(Base):
         self.__hashed_pass = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
     def check_password(self, password: str) -> bool:
-        return bcrypt.checkpw(password.encode('utf-8'), self.hashed_password.encode('utf-8'))
+        """
+        Check if the provided password matches the stored hashed password.
+        
+        Args:
+            password (str): The password to check.
+            
+        Returns:
+            bool: True if the password matches, False otherwise.
+        """
+        return bcrypt.checkpw(password.encode('utf-8'), self.hashed_password)

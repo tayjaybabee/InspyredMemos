@@ -52,16 +52,21 @@ class AppDirs:
 
 
         self.data_dir = data_dir or self._load_dir_from_cache('data') or DEFAULT_DIRS.data
+        self.cache_dir = DEFAULT_DIRS.cache
         self.config_dir = config_dir or self._load_dir_from_cache('config') or DEFAULT_DIRS.config
         self.log_dir = log_dir or self._load_dir_from_cache('log') or DEFAULT_DIRS.log
 
         self.__directories = [
             self.data_dir,
+            self.cache_dir,
             self.config_dir,
             self.log_dir
         ]
 
         self._ensure_dirs_exist()
+        
+        # Mark as initialized and update cache
+        self.__initialized = True
         self._update_cache_if_needed()
 
     @property
@@ -153,7 +158,7 @@ class AppDirs:
             dir_type (str): The type of directory to load ('data', 'config', 'log').
 
         Returns:
-            Path or None: The loaded directory path, or None if not found.
+            Path or None: The loaded directory path, or None if not found or invalid.
         """
         cache_file_path = DEFAULT_DIRS.cache / 'app_dirs.cache'
         if cache_file_path.exists():
@@ -161,7 +166,8 @@ class AppDirs:
                 with open(cache_file_path, 'r') as cache_file:
                     cache = json.load(cache_file)
                     dir_path = cache.get(dir_type)
-                    if dir_path:
+                    # Explicitly check for None and invalid values
+                    if dir_path is not None and str(dir_path).lower() != 'none':
                         return Path(dir_path)
             except (IOError, json.JSONDecodeError) as e:
                 print(f"Error reading directory cache: {e}")
@@ -169,6 +175,26 @@ class AppDirs:
         return None
 
     def _set_directory(self, attribute_name, new_dir, default_dir):
+        """
+        Set a directory attribute with validation.
+        
+        Args:
+            attribute_name (str): The name of the directory attribute (e.g., 'data', 'config', 'log').
+            new_dir (str, Path, None): The new directory path.
+            default_dir (Path): The default directory to use if new_dir is None.
+            
+        Returns:
+            Path: The resolved directory path.
+        """
+        if new_dir is None:
+            new_dir = default_dir
+        
+        if isinstance(new_dir, str):
+            new_dir = Path(new_dir)
+        elif not isinstance(new_dir, Path):
+            raise TypeError(f"{attribute_name}_dir must be str or Path, got {type(new_dir)}")
+        
+        return new_dir.expanduser().resolve()
         
 
     def __setattr__(self, name, value):
@@ -182,7 +208,13 @@ class AppDirs:
         for _ in dirs:
             if _ in name:
                 super().__setattr__(name, value)
-                self._update_cache_if_needed()
+                # Only update cache after initialization is complete
+                if hasattr(self, '_AppDirs__initialized') and self.__initialized:
+                    self._update_cache_if_needed()
+                return
+        
+        # For non-directory attributes, just set them normally
+        super().__setattr__(name, value)
 
 
 APP_DIRS = AppDirs()
